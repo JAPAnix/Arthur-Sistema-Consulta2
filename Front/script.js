@@ -54,6 +54,14 @@ function renderizarEspecialidades() {
         container.appendChild(card);
     });
 }
+//--- Abrir forms ocultos ---
+function abrirFormularioMedico() {
+    document.getElementById('formNovoMedico').style.display = 'block';
+}
+
+function fecharFormulario() {
+    document.getElementById('formNovoMedico').style.display = 'none';
+}
 
 // --- Cadastrar especialidade e médico ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -101,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formMed.reset();
                 medSchedulePro.doctors = medicos;
                 medSchedulePro.populateDoctors();
+                 fecharFormulario();
             }
         });
     }
