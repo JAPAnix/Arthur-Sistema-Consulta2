@@ -1,50 +1,128 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Agende sua Consulta</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSchedule Pro - Sistema de Agendamento Médico</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="header">
-    <div class="logo">
-      <h1>Consultas Médicas</h1>
-    </div>
-    <nav class="navbar">
-      <a href="index.html">Home</a>
-      <a href="consultas.html">Minhas Consultas</a>
-      <a href="agendar.html">Agendar Consulta</a>
-    </nav>
-  </header>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="/api/placeholder/50/50" alt="MedSchedule Pro Logo">
+                <h1>MedSchedule Pro</h1>
+            </div>
+            <nav class="sidebar-menu">
+                <ul>
+                    <li><a href="index.html" class="active"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>
+                    <li><a href="medicos.html"><i class="fas fa-user-md"></i> Médicos</a></li>
+                    <li><a href="especialidades.html"><i class="fas fa-hospital"></i> Especialidades</a></li>
+                </ul>
+            </nav>
+        </aside>
 
-  <section class="hero">
-    <div class="hero-content">
-      <h2>Agende sua consulta médica de forma simples e rápida</h2>
-      <p>Encontre o melhor especialista para cuidar de sua saúde.</p>
-      <a href="agendar.html" class="btn-principal">Agendar Consulta</a>
-    </div>
-  </section>
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-grid">
+                <!-- Quick Stats Cards -->
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <h2>Consultas Hoje</h2>
+                        <i class="fas fa-calendar-check" style="color: var(--secondary-color);"></i>
+                    </div>
+                    <div class="dashboard-card-content">
+                        <h1 id="todayAppointmentsCount">0</h1>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <h2>Próximas Consultas</h2>
+                        <i class="fas fa-calendar-day" style="color: var(--accent-color);"></i>
+                    </div>
+                    <div class="dashboard-card-content">
+                        <h1 id="upcomingAppointmentsCount">0</h1>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <h2>Total de Pacientes</h2>
+                        <i class="fas fa-users" style="color: #9b59b6;"></i>
+                    </div>
+                    <div class="dashboard-card-content">
+                        <h1 id="totalPatientsCount">0</h1>
+                    </div>
+                </div>
+            </div>
 
-  <section class="informacoes">
-    <div class="info-item">
-      <h3>Consultas Rápidas</h3>
-      <p>Agende sua consulta sem complicação e sem filas. Em poucos minutos, você estará no seu médico.</p>
-    </div>
-    <div class="info-item">
-      <h3>Especialistas Qualificados</h3>
-      <p>Oferecemos uma ampla gama de especialidades médicas com profissionais altamente qualificados.</p>
-    </div>
-    <div class="info-item">
-      <h3>Confiança e Segurança</h3>
-      <p>Seus dados estão seguros conosco. Priorizamos a proteção da sua privacidade em todo o processo.</p>
-    </div>
-  </section>
+            <!-- Appointments Section -->
+            <section style="margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.5rem;">Agendamentos</h2>
+                    <button id="newAppointmentBtn" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Nova Consulta
+                    </button>
+                </div>
 
-  <footer class="footer">
-    <p>&copy; 2025 Consultas Médicas. Todos os direitos reservados.</p>
-  </footer>
+                <div id="appointmentsList" class="appointments-list">
+                    <!-- Appointments will be dynamically added here -->
+                </div>
+            </section>
+        </main>
 
-  <script src="script.js"></script>
+        <!-- New Appointment Modal -->
+        <div id="newAppointmentModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Agendar Nova Consulta</h2>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="newAppointmentForm">
+                    <div class="form-group">
+                        <label for="patientName">Nome do Paciente</label>
+                        <input type="text" id="patientName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="patientCPF">CPF</label>
+                        <input type="text" id="patientCPF" class="form-control" required pattern="\d{3}\.\d{3}\.\d{3}-\d{2}">
+                    </div>
+                    <div class="form-group">
+                        <label for="specialty">Especialidade</label>
+                        <select id="specialty" class="form-control" required>
+                            <option value="">Selecione uma Especialidade</option>
+                            <option value="cardiologia">Cardiologia</option>
+                            <option value="neurologia">Neurologia</option>
+                            <option value="pediatria">Pediatria</option>
+                            <option value="ortopedia">Ortopedia</option>
+                            <option value="ginecologia">Ginecologia</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="doctor">Médico</label>
+                        <select id="doctor" class="form-control" required>
+                            <option value="">Selecione um Médico</option>
+                            <!-- Doctors will be dynamically populated -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentDate">Data da Consulta</label>
+                        <input type="datetime-local" id="appointmentDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="observations">Observações</label>
+                        <textarea id="observations" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Agendar Consulta</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
