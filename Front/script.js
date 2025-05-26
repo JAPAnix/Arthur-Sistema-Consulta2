@@ -1,419 +1,285 @@
-// --- Utilitários para especialidades e médicos ---
-function salvarEspecialidades() {
-    localStorage.setItem('especialidades', JSON.stringify(especialidades));
-}
+// ------------------------------
+// Funções para Agendamentos
+// ------------------------------
 
-function salvarMedicos() {
-    localStorage.setItem('medicos', JSON.stringify(medicos));
-}
+const doctorsBySpecialty = {
+    cardiologia: ["Dr. João Cardoso", "Dra. Maria Coração"],
+    neurologia: ["Dr. Carlos Neurônio", "Dra. Neuza Sinapse"],
+    pediatria: ["Dr. Pedro Pequeno", "Dra. Paula Criança"],
+    ortopedia: ["Dr. Otávio Osso", "Dra. Olivia Coluna"],
+    ginecologia: ["Dr. Gustavo Gineco", "Dra. Gabriela Mulher"]
+};
 
-function obterUltimaEspecialidade() {
-    return JSON.parse(localStorage.getItem('ultimaEspecialidade'));
-}
+let appointments = [];
 
-function salvarUltimaEspecialidade(especialidade) {
-    localStorage.setItem('ultimaEspecialidade', JSON.stringify(especialidade));
-}
+function initAgendamentos() {
+    const newAppointmentBtn = document.getElementById('newAppointmentBtn');
+    const newAppointmentModal = document.getElementById('newAppointmentModal');
+    const newAppointmentForm = document.getElementById('newAppointmentForm');
+    const specialtySelect = document.getElementById('specialty');
+    const doctorSelect = document.getElementById('doctor');
+    const appointmentsList = document.getElementById('appointmentsList');
+    const todayAppointmentsCount = document.getElementById('todayAppointmentsCount');
+    const upcomingAppointmentsCount = document.getElementById('upcomingAppointmentsCount');
+    const totalPatientsCount = document.getElementById('totalPatientsCount');
 
-// --- Dados em memória persistente ---
-let especialidades = JSON.parse(localStorage.getItem('especialidades')) || [];
-let medicos = JSON.parse(localStorage.getItem('medicos')) || [];
+    if (!newAppointmentBtn) return; // Não está na página de agendamentos
 
-// --- Atualiza <select> de especialidades no cadastro de médico ---
-function atualizarSelectEspecialidades() {
-    const select = document.getElementById('especialidadeMedico');
-    if (!select) return;
-
-    select.innerHTML = '<option value="">Selecione uma Especialidade</option>';
-    especialidades.forEach(esp => {
-        const option = document.createElement('option');
-        option.value = esp.nome;
-        option.textContent = esp.nome;
-        select.appendChild(option);
+    newAppointmentBtn.addEventListener('click', () => {
+        newAppointmentModal.style.display = 'flex';
     });
-}
 
-// --- Renderiza especialidades na página de especialidades ---
-function renderizarEspecialidades() {
-    const container = document.querySelector('.appointments-list');
-    if (!container) return;
-
-    container.innerHTML = '';
-    especialidades.forEach((esp, index) => {
-        const card = document.createElement('div');
-        card.className = 'appointment-card';
-        card.innerHTML = `
-            <div class="appointment-details">
-                <h3>${esp.nome}</h3>
-                <p>${esp.descricao}</p>
-            </div>
-            <div class="appointment-actions">
-                <button class="btn btn-outline" onclick="removerEspecialidade(${index})"><i class="fas fa-trash-alt"></i></button>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
-//--- Abrir forms ocultos ---
-function abrirFormularioMedico() {
-    document.getElementById('formNovoMedico').style.display = 'block';
-}
-
-function fecharFormulario() {
-    document.getElementById('formNovoMedico').style.display = 'none';
-}
-
-// --- Cadastrar especialidade e médico ---
-document.addEventListener('DOMContentLoaded', () => {
-    const formEsp = document.getElementById('formCadastrarEspecialidade');
-    if (formEsp) {
-        formEsp.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const nome = document.getElementById('nomeEspecialidade').value.trim();
-            const descricao = document.getElementById('descricaoEspecialidade').value.trim();
-
-            if (nome && descricao) {
-                const novaEspecialidade = { nome, descricao };
-                especialidades.push(novaEspecialidade);
-                salvarEspecialidades();
-                salvarUltimaEspecialidade(novaEspecialidade);
-                renderizarEspecialidades();
-                atualizarSelectEspecialidades();
-                formEsp.reset();
-                alert('Especialidade cadastrada com sucesso!');
-            }
-        });
-    }
-
-    const formMed = document.getElementById('formCadastrarMedico');
-    if (formMed) {
-        formMed.addEventListener('submit', (e) => {
-            e.preventDefault();
-
-            const nome = document.getElementById('nomeMedico').value.trim();
-            const crm = document.getElementById('crmMedico').value.trim();
-            const telefone = document.getElementById('telefoneMedico').value.trim();
-            const especialidade = document.getElementById('especialidadeMedico').value;
-
-            if (nome && crm && telefone && especialidade) {
-                const novoMedico = {
-                    id: Date.now(),
-                    name: nome,
-                    crm,
-                    phone: telefone,
-                    specialty: especialidade
-                };
-                medicos.push(novoMedico);
-                salvarMedicos();
-                alert('Médico cadastrado com sucesso!');
-                formMed.reset();
-                medSchedulePro.doctors = medicos;
-                medSchedulePro.populateDoctors();
-                 fecharFormulario();
-            }
-        });
-    }
-
-    atualizarSelectEspecialidades();
-    renderizarEspecialidades();
-});
-
-// --- Remover especialidade ---
-function removerEspecialidade(index) {
-    if (confirm('Deseja remover esta especialidade?')) {
-        especialidades.splice(index, 1);
-        salvarEspecialidades();
-        renderizarEspecialidades();
-        atualizarSelectEspecialidades();
-    }
-}
-
-// --- Classe principal ---
-class MedSchedulePro {
-    constructor() {
-        this.appointments = JSON.parse(localStorage.getItem('medScheduleAppointments')) || [];
-        this.patients = JSON.parse(localStorage.getItem('medSchedulePatients')) || [];
-        this.doctors = medicos; // médicos do localStorage
-        this.initializeApp();
-    }
-
-    initializeApp() {
-        this.bindEvents();
-        this.populateSpecialties();
-        this.populateDoctors();
-        this.renderAppointments();
-        this.updateDashboardStats();
-        this.initMaskListeners();
-    }
-
-    bindEvents() {
-        const newAppointmentForm = document.getElementById('newAppointmentForm');
-        if (newAppointmentForm) {
-            newAppointmentForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.createAppointment();
-            });
-        }
-
-        const newAppointmentBtn = document.getElementById('newAppointmentBtn');
-        if (newAppointmentBtn) {
-            newAppointmentBtn.addEventListener('click', () => {
-                this.openNewAppointmentModal();
-            });
-        }
-
-        const specialtySelect = document.getElementById('specialty');
-        if (specialtySelect) {
-            specialtySelect.addEventListener('change', () => {
-                this.filterDoctorsBySpecialty();
-            });
-        }
-    }
-
-    populateSpecialties() {
-        const specialtySelect = document.getElementById('specialty');
-        if (!specialtySelect) return;
-
-        specialtySelect.innerHTML = '<option value="">Selecione uma Especialidade</option>';
-        especialidades.forEach(esp => {
-            const option = document.createElement('option');
-            option.value = esp.nome;
-            option.textContent = esp.nome;
-            specialtySelect.appendChild(option);
-        });
-    }
-
-    initMaskListeners() {
-        const cpfInput = document.getElementById('patientCPF');
-        if (!cpfInput) return;
-        cpfInput.addEventListener('input', (e) => {
-            e.target.value = this.formatCPF(e.target.value);
-        });
-    }
-
-    formatCPF(value) {
-        return value
-            .replace(/\D/g, '')
-            .replace(/(\d{3})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-            .replace(/(-\d{2})\d+?$/, '$1');
-    }
-
-    populateDoctors() {
-        const doctorSelect = document.getElementById('doctor');
-        if (!doctorSelect) return;
-
+    window.closeModal = function () {
+        newAppointmentModal.style.display = 'none';
+        newAppointmentForm.reset();
         doctorSelect.innerHTML = '<option value="">Selecione um Médico</option>';
-        this.doctors.forEach(doctor => {
-            const option = document.createElement('option');
-            option.value = doctor.id;
-            option.textContent = doctor.name;
-            doctorSelect.appendChild(option);
-        });
-    }
+    };
 
-    filterDoctorsBySpecialty() {
-        const specialtySelect = document.getElementById('specialty');
-        const doctorSelect = document.getElementById('doctor');
+    specialtySelect.addEventListener('change', () => {
         const selectedSpecialty = specialtySelect.value;
-
         doctorSelect.innerHTML = '<option value="">Selecione um Médico</option>';
-        const filteredDoctors = this.doctors.filter(doc => doc.specialty === selectedSpecialty);
-        filteredDoctors.forEach(doc => {
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = doc.name;
-            doctorSelect.appendChild(option);
-        });
-    }
+        if (doctorsBySpecialty[selectedSpecialty]) {
+            doctorsBySpecialty[selectedSpecialty].forEach(doctor => {
+                const option = document.createElement('option');
+                option.value = doctor;
+                option.textContent = doctor;
+                doctorSelect.appendChild(option);
+            });
+        }
+    });
 
-    createAppointment() {
-        const patientName = document.getElementById('patientName').value.trim();
-        const patientCPF = document.getElementById('patientCPF').value;
-        const specialty = document.getElementById('specialty').value;
-        const doctorId = document.getElementById('doctor').value;
-        const appointmentDate = document.getElementById('appointmentDate').value;
-        const observations = document.getElementById('observations').value.trim();
-
-        if (!this.validateAppointmentForm()) return;
+    newAppointmentForm.addEventListener('submit', (e) => {
+        e.preventDefault();
 
         const newAppointment = {
-            id: Date.now(),
-            patientName,
-            patientCPF,
-            specialty,
-            doctorId,
-            date: appointmentDate,
-            observations,
-            status: 'confirmed'
+            patientName: document.getElementById('patientName').value.trim(),
+            patientCPF: document.getElementById('patientCPF').value.trim(),
+            specialty: specialtySelect.options[specialtySelect.selectedIndex]?.text || 'Não informado',
+            doctor: doctorSelect.options[doctorSelect.selectedIndex]?.text || 'Não informado',
+            appointmentDate: document.getElementById('appointmentDate').value,
+            observations: document.getElementById('observations').value.trim()
         };
 
-        this.appointments.push(newAppointment);
-        this.saveAppointments();
-        this.renderAppointments();
-        this.updateDashboardStats();
-        this.closeModal();
-        document.getElementById('newAppointmentForm').reset();
-    }
+        appointments.push(newAppointment);
+        renderAppointments();
+        updateStats();
+        closeModal();
+    });
 
-    validateAppointmentForm() {
-        const patientName = document.getElementById('patientName').value.trim();
-        const patientCPF = document.getElementById('patientCPF').value;
-        const specialty = document.getElementById('specialty').value;
-        const doctorId = document.getElementById('doctor').value;
-        const appointmentDate = document.getElementById('appointmentDate').value;
-
-        if (patientName.length < 3) {
-            alert('Nome do paciente deve ter pelo menos 3 caracteres.');
-            return false;
-        }
-
-        if (!this.validateCPF(patientCPF)) {
-            alert('CPF inválido.');
-            return false;
-        }
-
-        if (!specialty || !doctorId || !appointmentDate) {
-            alert('Preencha todos os campos obrigatórios.');
-            return false;
-        }
-
-        const conflict = this.appointments.find(app =>
-            app.doctorId === doctorId &&
-            app.date === appointmentDate &&
-            app.status !== 'canceled'
-        );
-        if (conflict) {
-            alert('Este horário já está ocupado para este médico.');
-            return false;
-        }
-
-        return true;
-    }
-
-    validateCPF(cpf) {
-        cpf = cpf.replace(/[^\d]+/g, '');
-        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
-        let sum = 0, rest;
-        for (let i = 1; i <= 9; i++) sum += parseInt(cpf[i - 1]) * (11 - i);
-        rest = (sum * 10) % 11;
-        if (rest === 10 || rest === 11) rest = 0;
-        if (rest !== parseInt(cpf[9])) return false;
-        sum = 0;
-        for (let i = 1; i <= 10; i++) sum += parseInt(cpf[i - 1]) * (12 - i);
-        rest = (sum * 10) % 11;
-        if (rest === 10 || rest === 11) rest = 0;
-        return rest === parseInt(cpf[10]);
-    }
-
-    renderAppointments() {
-        const container = document.getElementById('appointmentsList');
-        container.innerHTML = '';
-
-        const sorted = this.appointments
-            .filter(app => app.status !== 'canceled')
-            .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        if (sorted.length === 0) {
-            container.innerHTML = '<div style="text-align:center;padding:20px;color:gray;">Nenhuma consulta agendada</div>';
-            return;
-        }
-
-        sorted.forEach(app => {
-            const doctor = this.doctors.find(d => d.id == app.doctorId);
-            const formattedDate = new Date(app.date).toLocaleString('pt-BR', {
-                dateStyle: 'full', timeStyle: 'short'
-            });
-
-            const card = document.createElement('div');
-            card.className = 'appointment-card';
-            card.innerHTML = `
-                <div class="appointment-details">
-                    <h3>${app.patientName}</h3>
-                    <p><strong>Especialidade:</strong> ${this.capitalizeFirst(app.specialty)} | <strong>Médico:</strong> ${doctor ? doctor.name : 'Indefinido'}</p>
-                    <p><strong>Data:</strong> ${formattedDate}</p>
-                    <span class="status-badge status-${app.status}">${this.getStatusLabel(app.status)}</span>
-                </div>
-                <div class="appointment-actions">
-                    <button class="btn btn-secondary" onclick="medSchedulePro.rescheduleAppointment(${app.id})"><i class="fas fa-calendar-alt"></i> Reagendar</button>
-                    <button class="btn" style="background-color:#e74c3c" onclick="medSchedulePro.cancelAppointment(${app.id})"><i class="fas fa-times-circle"></i> Cancelar</button>
-                </div>
+    function renderAppointments() {
+        appointmentsList.innerHTML = '';
+        appointments.forEach((appt, index) => {
+            const apptDiv = document.createElement('div');
+            apptDiv.className = 'appointment-item';
+            apptDiv.style = `
+                border: 1px solid #ddd;
+                padding: 10px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             `;
-            container.appendChild(card);
+            const apptInfo = document.createElement('div');
+            apptInfo.innerHTML = `
+                <strong>${appt.patientName || 'Não informado'}</strong><br>
+                ${appt.specialty || 'Especialidade não informada'}<br>
+                ${appt.doctor || 'Médico não informado'}<br>
+                ${appt.appointmentDate ? formatDateTime(appt.appointmentDate) : 'Data não informada'}
+            `;
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-outline btn-delete';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.addEventListener('click', () => deleteAppointment(index));
+
+            apptDiv.appendChild(apptInfo);
+            apptDiv.appendChild(deleteBtn);
+
+            appointmentsList.appendChild(apptDiv);
         });
     }
 
-    rescheduleAppointment(id) {
-        const appointment = this.appointments.find(app => app.id === id);
-        if (!appointment) return;
-        const newDate = prompt('Digite a nova data da consulta:', appointment.date);
-        if (newDate) {
-            appointment.date = newDate;
-            this.saveAppointments();
-            this.renderAppointments();
-            this.updateDashboardStats();
-        }
-    }
-
-    cancelAppointment(id) {
-        const appointment = this.appointments.find(app => app.id === id);
-        if (!appointment) return;
-        if (confirm('Deseja cancelar esta consulta?')) {
-            appointment.status = 'canceled';
-            this.saveAppointments();
-            this.renderAppointments();
-            this.updateDashboardStats();
-        }
-    }
-
-    updateDashboardStats() {
+    function updateStats() {
         const today = new Date();
-        const todayAppointments = this.appointments.filter(app =>
-            app.status !== 'canceled' && new Date(app.date).toDateString() === today.toDateString()
-        );
-        const upcomingAppointments = this.appointments.filter(app =>
-            app.status !== 'canceled' && new Date(app.date) > today
-        );
-        const totalPatients = new Set(
-            this.appointments.filter(app => app.status !== 'canceled').map(app => app.patientCPF)
-        ).size;
+        let todayCount = 0;
+        let upcomingCount = 0;
 
-        document.getElementById('todayAppointmentsCount').textContent = todayAppointments.length;
-        document.getElementById('upcomingAppointmentsCount').textContent = upcomingAppointments.length;
-        document.getElementById('totalPatientsCount').textContent = totalPatients;
+        appointments.forEach(appt => {
+            const apptDate = new Date(appt.appointmentDate);
+            if (isSameDay(apptDate, today)) todayCount++;
+            if (apptDate > today) upcomingCount++;
+        });
+
+        todayAppointmentsCount.textContent = todayCount;
+        upcomingAppointmentsCount.textContent = upcomingCount;
+        totalPatientsCount.textContent = appointments.length;
     }
 
-    saveAppointments() {
-        localStorage.setItem('medScheduleAppointments', JSON.stringify(this.appointments));
+    function deleteAppointment(index) {
+        if (confirm("Deseja realmente excluir este agendamento?")) {
+            appointments.splice(index, 1);
+            renderAppointments();
+            updateStats();
+        }
     }
 
-    openNewAppointmentModal() {
-        document.getElementById('newAppointmentModal').style.display = 'flex';
+    function isSameDay(date1, date2) {
+        return date1.getDate() === date2.getDate() &&
+               date1.getMonth() === date2.getMonth() &&
+               date1.getFullYear() === date2.getFullYear();
     }
 
-    closeModal() {
-        document.getElementById('newAppointmentModal').style.display = 'none';
-        document.getElementById('newAppointmentForm').reset();
-        this.populateDoctors();
+    function formatDateTime(dateStr) {
+        const date = new Date(dateStr);
+        if (isNaN(date)) return 'Data inválida';
+        return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
 
-    capitalizeFirst(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
+    window.addEventListener('click', (e) => {
+        if (e.target === newAppointmentModal) {
+            closeModal();
+        }
+    });
+}
+
+// ------------------------------
+// Funções para Médicos
+// ------------------------------
+
+const especialidades = ["Cardiologia", "Neurologia", "Pediatria", "Ortopedia", "Ginecologia"];
+let medicos = [
+    {
+        nome: "Dr. João Silva",
+        especialidade: "Cardiologia",
+        crm: "123456",
+        telefone: "(11) 91234-5678"
+    },
+    {
+        nome: "Dra. Maria Oliveira",
+        especialidade: "Pediatria",
+        crm: "654321",
+        telefone: "(21) 99876-5432"
+    }
+];
+
+function initMedicos() {
+    const formNovoMedico = document.getElementById('formNovoMedico');
+    const formCadastrarMedico = document.getElementById('formCadastrarMedico');
+    const especialidadeSelect = document.getElementById('especialidadeMedico');
+    const nomeInput = document.getElementById('nomeMedico');
+    const crmInput = document.getElementById('crmMedico');
+    const telefoneInput = document.getElementById('telefoneMedico');
+    const appointmentsList = document.querySelector('.appointments-list');
+
+    if (!formNovoMedico) return; // Não está na página de médicos
+
+    function preencherEspecialidades() {
+        especialidadeSelect.innerHTML = '<option value="">Selecione uma Especialidade</option>';
+        especialidades.forEach(esp => {
+            const option = document.createElement('option');
+            option.value = esp;
+            option.textContent = esp;
+            especialidadeSelect.appendChild(option);
+        });
     }
 
-    getStatusLabel(status) {
-        const labels = {
-            confirmed: 'Confirmado',
-            pending: 'Pendente',
-            canceled: 'Cancelado'
+    window.abrirFormularioMedico = function () {
+        formNovoMedico.style.display = 'flex';
+    };
+
+    window.fecharFormulario = function () {
+        formNovoMedico.style.display = 'none';
+        formCadastrarMedico.reset();
+    };
+
+    function renderizarMedicos() {
+        appointmentsList.innerHTML = '';
+
+        medicos.forEach((medico, index) => {
+            const card = document.createElement('div');
+            card.className = 'appointment-card';
+
+            const detalhes = document.createElement('div');
+            detalhes.className = 'appointment-details';
+            detalhes.innerHTML = `
+                <h3>${medico.nome}</h3>
+                <p>Especialidade: ${medico.especialidade}</p>
+                <p>CRM: ${medico.crm}</p>
+                <p>Telefone: ${medico.telefone}</p>
+            `;
+
+            const acoes = document.createElement('div');
+            acoes.className = 'appointment-actions';
+
+            const editarBtn = document.createElement('button');
+            editarBtn.className = 'btn btn-outline';
+            editarBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editarBtn.addEventListener('click', () => editarMedico(index));
+
+            const excluirBtn = document.createElement('button');
+            excluirBtn.className = 'btn btn-outline';
+            excluirBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            excluirBtn.addEventListener('click', () => excluirMedico(index));
+
+            acoes.appendChild(editarBtn);
+            acoes.appendChild(excluirBtn);
+
+            card.appendChild(detalhes);
+            card.appendChild(acoes);
+
+            appointmentsList.appendChild(card);
+        });
+    }
+
+    formCadastrarMedico.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const novoMedico = {
+            nome: nomeInput.value.trim(),
+            especialidade: especialidadeSelect.value,
+            crm: crmInput.value.trim(),
+            telefone: telefoneInput.value.trim()
         };
-        return labels[status] || status;
+
+        medicos.push(novoMedico);
+        renderizarMedicos();
+        fecharFormulario();
+    });
+
+    function excluirMedico(index) {
+        if (confirm("Deseja realmente excluir este médico?")) {
+            medicos.splice(index, 1);
+            renderizarMedicos();
+        }
     }
+
+    function editarMedico(index) {
+        const medico = medicos[index];
+        nomeInput.value = medico.nome;
+        especialidadeSelect.value = medico.especialidade;
+        crmInput.value = medico.crm;
+        telefoneInput.value = medico.telefone;
+
+        abrirFormularioMedico();
+
+        medicos.splice(index, 1);
+    }
+
+    window.addEventListener('click', (e) => {
+        if (e.target === formNovoMedico) {
+            fecharFormulario();
+        }
+    });
+
+    preencherEspecialidades();
+    renderizarMedicos();
 }
 
-const medSchedulePro = new MedSchedulePro();
-
-function closeModal() {
-    medSchedulePro.closeModal();
-}
+// ------------------------------
+// Inicialização automática
+// ------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    initAgendamentos();
+    initMedicos();
+});

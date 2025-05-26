@@ -280,3 +280,8 @@
             background-color: rgba(231,76,60,0.1);
             color: #e74c3c;
         }
+
+        .logo {
+            width: 120px; /* Aumente esse valor conforme necessário */
+            height: auto;
+          }
